@@ -23,7 +23,9 @@ class WebViewState(
     loadingState: LoadingState = LoadingState.Initializing,
     errors: List<WebViewError> = emptyList(),
     canGoBack: Boolean = false,
-    canGoForward: Boolean = false
+    canGoForward: Boolean = false,
+    settings: WebViewSettings = WebViewSettings(),
+    val bridge: WebViewBridge = WebViewBridge()
 ) {
     var content: WebContent by mutableStateOf(content)
     var pageTitle: String? by mutableStateOf(pageTitle)
@@ -32,4 +34,5 @@ class WebViewState(
     var errors: List<WebViewError> by mutableStateOf(errors)
     var canGoBack: Boolean by mutableStateOf(canGoBack)
     var canGoForward: Boolean by mutableStateOf(canGoForward)
+    var settings: WebViewSettings by mutableStateOf(settings)
 }
