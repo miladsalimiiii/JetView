@@ -13,7 +13,9 @@ sealed interface WebViewCommand {
     data class EvaluateJavaScript(val script: String, val callback: ((String?) -> Unit)? = null) : WebViewCommand
 }
 
-class WebViewNavigator {
+class WebViewNavigator(
+    val bridge: WebViewBridge = WebViewBridge()
+) {
     private val _navigationRequests = MutableSharedFlow<WebViewCommand>(replay = 0, extraBufferCapacity = 64)
     val navigationRequests: SharedFlow<WebViewCommand> = _navigationRequests.asSharedFlow()
 
