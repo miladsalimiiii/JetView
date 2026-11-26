@@ -2,6 +2,7 @@ package io.github.miladsalimi.jetview.presentation.component
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView as AndroidWebView
@@ -13,11 +14,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.miladsalimi.jetview.domain.model.LoadingState
 import io.github.miladsalimi.jetview.domain.model.WebContent
+import io.github.miladsalimi.jetview.domain.model.WebViewBridge
 import io.github.miladsalimi.jetview.domain.model.WebViewCommand
 import io.github.miladsalimi.jetview.domain.model.WebViewError
 import io.github.miladsalimi.jetview.domain.model.WebViewNavigator
 import io.github.miladsalimi.jetview.domain.model.WebViewState
 import kotlinx.coroutines.flow.collectLatest
+
+private class WebAppInterface(private val bridge: WebViewBridge) {
+    @JavascriptInterface
+    fun postMessage(message: String) {
+        bridge.postMessage(message)
+    }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -35,10 +44,27 @@ actual fun WebView(
         factory = { context ->
             AndroidWebView(context).apply {
                 webViewInstance = this
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
+
+                // Apply settings
+                val settings = state.settings
+                this.settings.javaScriptEnabled = settings.javaScriptEnabled
+                this.settings.domStorageEnabled = settings.domStorageEnabled
+                this.settings.loadsImagesAutomatically = settings.loadsImagesAutomatically
+                this.settings.mediaPlaybackRequiresUserGesture = settings.mediaPlaybackRequiresUserGesture
+                this.settings.setSupportZoom(settings.supportZoom)
+                this.settings.builtInZoomControls = settings.supportZoom
+                if (settings.userAgentString != null) {
+                    this.settings.userAgentString = settings.userAgentString
+                }
+
+                // Add JS Bridge interface
+                val bridge = state.bridge
+                addJavascriptInterface(WebAppInterface(bridge), bridge.bridgeName)
+
+                // Download listener
+                setDownloadListener { url, _, _, _, _ ->
+                    navigator.loadUrl(url)
+                }
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageStarted(view: AndroidWebView?, url: String?, favicon: Bitmap?) {
@@ -106,10 +132,15 @@ actual fun WebView(
         },
         update = { webView ->
             webViewInstance = webView
+            // Update settings if changed
+            val settings = state.settings
+            webView.settings.javaScriptEnabled = settings.javaScriptEnabled
+            webView.settings.domStorageEnabled = settings.domStorageEnabled
+
             when (val content = state.content) {
                 is WebContent.Url -> {
                     if (webView.url != content.url) {
-                        webView.loadUrl(content.url, content.httpHeaders)
+                        webView.loadUserAgentAndUrl(content) // or loadUrl
                     }
                 }
                 is WebContent.Html -> {
@@ -145,4 +176,8 @@ actual fun WebView(
             }
         }
     }
+}
+
+private fun AndroidWebView.loadUserAgentAndUrl(content: WebContent.Url) {
+    loadUrl(content.url, content.httpHeaders)
 }
