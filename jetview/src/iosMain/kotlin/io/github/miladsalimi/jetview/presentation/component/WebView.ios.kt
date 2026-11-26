@@ -17,6 +17,9 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationDelegateProtocol
+import platform.WebKit.WKScriptMessage
+import platform.WebKit.WKScriptMessageHandlerProtocol
+import platform.WebKit.WKUserContentController
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
 import platform.darwin.NSObject
@@ -35,6 +38,25 @@ actual fun WebView(
     UIKitView(
         factory = {
             val config = WKWebViewConfiguration()
+            val settings = state.settings
+            config.allowsInlineMediaPlayback = !settings.mediaPlaybackRequiresUserGesture
+
+            // Add JS Bridge
+            val bridge = state.bridge
+            config.userContentController.addScriptMessageHandler(
+                scriptMessageHandler = object : NSObject(), WKScriptMessageHandlerProtocol {
+                    @ObjCSignatureOverride
+                    override fun userContentController(
+                        userContentController: WKUserContentController,
+                        didReceiveScriptMessage: WKScriptMessage
+                    ) {
+                        val body = didReceiveScriptMessage.body.toString()
+                        bridge.postMessage(body)
+                    }
+                },
+                name = bridge.bridgeName
+            )
+
             val webView = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config).apply {
                 webViewInstance = this
                 navigationDelegate = object : NSObject(), WKNavigationDelegateProtocol {
