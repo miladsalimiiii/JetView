@@ -59,6 +59,7 @@ actual fun WebView(
 
             val webView = WKWebView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), configuration = config).apply {
                 webViewInstance = this
+                allowsBackForwardNavigationGestures = true
                 navigationDelegate = object : NSObject(), WKNavigationDelegateProtocol {
                     @ObjCSignatureOverride
                     override fun webView(webView: WKWebView, didStartProvisionalNavigation: WKNavigation?) {
