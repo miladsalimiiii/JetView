@@ -28,10 +28,14 @@ fun App() {
         val webViewState = rememberWebViewState(urlInput)
         val navigator = rememberWebViewNavigator()
 
-        // JS Eval result state
+        if (selectedTab == 0) {
+            PlatformBackHandler(enabled = webViewState.canGoBack) {
+                navigator.goBack()
+            }
+        }
+
         var jsResult by remember { mutableStateOf<String?>(null) }
 
-        // JS Bridge messages collected from WebView
         val bridgeMessages = remember { mutableStateListOf<String>() }
 
         // Custom HTML content state with JS Bridge integration & visual feedback
@@ -347,8 +351,8 @@ fun App() {
                                         }
                                     }
                                     if (jsResult != null) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = jsResult!!, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                                       Spacer(modifier = Modifier.height(4.dp))
+                                       Text(text = jsResult!!, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
